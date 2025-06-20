@@ -13,9 +13,24 @@ dotenv.config();
 connectDB();
 
 const app = express();
-const __dirname = path.resolve()
+const __dirname = path.resolve();
 
-app.use(cors({ origin: process.env.FRONTEND_URL, credentials: true }));
+
+const allowedOrigins = process.env.ALLOWED_ORIGINS.split(',').map(origin => origin.trim().replace(/\/$/, '')); // remove trailing slash
+
+app.use(cors({
+  origin: function (origin, callback) {
+    // allow requests with no origin (like mobile apps or curl)
+    if (!origin || allowedOrigins.includes(origin.replace(/\/$/, ''))) {
+      callback(null, true);
+    } else {
+      callback(new Error(`❌ Not allowed by CORS: ${origin}`));
+    }
+  },
+  credentials: true,
+}));
+
+
 app.use(express.json());
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
