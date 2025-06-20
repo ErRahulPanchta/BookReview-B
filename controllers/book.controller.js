@@ -1,4 +1,5 @@
 import Book from '../models/book.model.js';
+import Review from '../models/review.model.js';
 
 // Get all books with advanced filtering, sorting and pagination
 export const getAllBooks = async (req, res) => {
