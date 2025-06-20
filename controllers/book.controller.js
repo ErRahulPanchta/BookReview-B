@@ -68,38 +68,30 @@ export const getAllBooks = async (req, res) => {
 
 // Get single book by ID with populated reviews
 export const getBookById = async (req, res) => {
-  const { id } = req.params;
-
-  if (!mongoose.Types.ObjectId.isValid(id)) {
-    return res.status(400).json({ message: 'Invalid book ID format' });
-  }
-
   try {
-    const book = await Book.findById(id)
-      .populate({
-        path: 'reviews',
-        populate: {
-          path: 'user',
-          select: 'name avatar'
-        }
-      });
+    const book = await Book.findById(req.params.id);
 
     if (!book) {
       return res.status(404).json({ message: 'Book not found' });
     }
 
-    // Optional: Calculate average rating without saving
-    if (book.reviews.length > 0) {
-      const totalRating = book.reviews.reduce((sum, r) => sum + r.rating, 0);
-      book.rating = totalRating / book.reviews.length;
+    const reviews = await Review.find({ book: req.params.id }).populate('user', 'name avatar');
+
+    // Calculate average rating
+    let avgRating = 0;
+    if (reviews.length > 0) {
+      const totalRating = reviews.reduce((sum, review) => sum + review.rating, 0);
+      avgRating = totalRating / reviews.length;
     }
 
-    res.status(200).json(book);
+    book.rating = avgRating;
+    await book.save();
+
+    res.status(200).json({ ...book.toObject(), reviews });
   } catch (err) {
-    console.error('❌ Error in getBookById:', err);
-    res.status(500).json({ 
-      message: 'Failed to fetch book', 
-      error: err.message 
+    res.status(500).json({
+      message: 'Failed to fetch book',
+      error: err.message,
     });
   }
 };
